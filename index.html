@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberOps Terminal v1.4.0 — Ethical Hacking Operations Simulator</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="favicon.png">
+    <!-- CSS Design Sheet -->
+    <link rel="stylesheet" href="styles.css">
+    <!-- Lucide Icons Library (CDN for responsive vector icons) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Supabase Client JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- CRT Overlay effects -->
+    <div class="crt-overlay"></div>
+
+    <!-- Matrix scrolling background -->
+    <canvas id="matrix-canvas"></canvas>
+
+    <!-- ==========================================================================
+         1. BOOT SCREEN INTERFACE
+         ========================================================================== -->
+    <div id="boot-screen">
+        <div class="boot-log-container" id="boot-log">
+            <div id="js-diagnostic-warning" style="color: #FF3C38; font-family: monospace; font-size: 0.95rem; padding: 20px; border: 1px dashed #FF3C38; margin-bottom: 20px; display: none; line-height: 1.6; user-select: text;">
+                <span style="font-weight: bold; font-size: 1.1rem; display: block; margin-bottom: 10px;">[CRITICAL WARNING: CORE ENGINE INITIALIZATION ERROR]</span>
+                The CyberOps OS simulated workstation failed to boot.<br><br>
+                <span style="color: #FF6A00; font-weight: bold;">POSSIBLE CAUSES:</span><br>
+                1. <strong>Local File Security:</strong> Your browser has strict security settings that block local script files from running directly over the <code style="background: #222; padding: 2px 4px;">file://</code> protocol.<br>
+                2. <strong>Browser Extensions:</strong> A script-blocker or high-security adblocker is preventing <code style="background: #222; padding: 2px 4px;">js/app.js</code> from executing.<br>
+                3. <strong>Syntax / Runtime Error:</strong> An unhandled exception occurred in the engine script execution flow.<br><br>
+                <span style="color: #00C2FF; font-weight: bold;">TROUBLESHOOTING ACTIONS:</span><br>
+                • Press <strong>F12</strong> (or right-click the page and select <strong>"Inspect"</strong>), go to the <strong>"Console"</strong> tab, and see what error is listed.<br>
+                • Try using a modern browser like <strong>Google Chrome</strong> or <strong>Microsoft Edge</strong>, or start a local HTTP development server if your browser blocks direct local file execution.
+            </div>
+        </div>
+        <div class="boot-progress-bar">
+            <div class="boot-progress-fill" id="boot-progress"></div>
+        </div>
+        <!-- Inline watchdog script to monitor boot progress -->
+        <script>
+            setTimeout(function() {
+                var progress = document.getElementById('boot-progress');
+                if (progress && (!progress.style.width || progress.style.width === '0%')) {
+                    var warning = document.getElementById('js-diagnostic-warning');
+                    if (warning) {
+                        warning.style.display = 'block';
+                    }
+                }
+            }, 2000);
+        </script>
+    </div>
+
+    <!-- ==========================================================================
+         2. WELCOME / LANDING SCREEN
+         ========================================================================== -->
+    <div id="welcome-screen" style="display: none;">
+        <h1 class="welcome-logo">CYBER<span>OPS</span> GRID</h1>
+        <p class="welcome-subtitle">Learn Cybersecurity Through Immersive Sandbox Simulation</p>
+        <div class="welcome-buttons">
+            <button class="btn-neon" id="welcome-btn-start">INITIALIZE DEPLOYMENT</button>
+            <button class="btn-neon btn-neon-orange" id="welcome-btn-demo">ACCESS TRAINING LABS</button>
+        </div>
+    </div>
+
+    <!-- ==========================================================================
+         3. ACCESS / SECURITY PORTAL (Login & Register)
+         ========================================================================== -->
+    <div id="auth-screen" style="display: none;">
+        <!-- Left Sidebar: CyberOps Systems Status Banner -->
+        <div class="auth-sidebar">
+            <canvas id="auth-sidebar-canvas"></canvas>
+            <div class="auth-sidebar-content">
+                <div class="cyber-brand-large">CYBEROPS SYSTEMS</div>
+                <div class="cyber-status-large">ONLINE</div>
+                <div class="cyber-handshake-status">TRAINING SUB-LAYER HANDSHAKE: STABLE</div>
+                <p class="cyber-desc-text">
+                    Auditing 15+ UNIX sandboxed utilities, virtual penetration topologies, automated ledger extractions, and multi-user mock-capture logs.
+                </p>
+                <div class="cyber-gateway-stats">SESSION_GATEWAY_UP | PING: 15ms | FIREWALL: ACTIVE</div>
+            </div>
+        </div>
+
+        <!-- Right Pane: Operative Gateway Verification Card -->
+        <div class="auth-form-container">
+            <div class="auth-box">
+                <div class="auth-mode-selector" style="display: flex; border: 1px solid var(--color-border); border-radius: 4px; overflow: hidden; margin-bottom: 20px;">
+                    <button class="auth-mode-btn active" id="mode-btn-login" style="flex: 1; padding: 12px; background: rgba(0, 194, 255, 0.05); border: none; color: var(--color-blue); font-family: var(--font-primary); font-size: 0.95rem; font-weight: bold; letter-spacing: 1px; cursor: pointer; transition: all 0.25s;">OPERATIVE LOGIN</button>
+                    <button class="auth-mode-btn" id="mode-btn-register" style="flex: 1; padding: 12px; background: rgba(6, 12, 24, 0.6); border: none; color: var(--color-text-muted); font-family: var(--font-primary); font-size: 0.95rem; font-weight: bold; letter-spacing: 1px; cursor: pointer; transition: all 0.25s; border-left: 1px solid var(--color-border);">OPERATIVE REGISTRATION</button>
+                </div>
+
+                <h2 class="auth-title" id="auth-title-text">OPERATIVE VERIFICATION</h2>
+                <p class="auth-subtitle" id="auth-subtitle-text">Authorize operational clearance keys to unlock security portals.</p>
+                
+                <form id="auth-form" onsubmit="return false;">
+                    <!-- Input Code Name field -->
+                    <div class="form-group">
+                        <label class="form-label" for="auth-username" id="auth-username-label">OPERATIVE CODE NAME</label>
+                        <div class="input-with-icon" style="position: relative;">
+                            <span class="input-icon-wrapper">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                            </span>
+                            <input class="form-input" type="text" id="auth-username" required placeholder="e.g. ghost_specialist" autocomplete="off" style="padding-right: 45px;">
+                            <span class="validation-status-badge" id="username-validation-badge"></span>
+                        </div>
+                    </div>
+
+                    <!-- Hidden Recovery Email input container -->
+                    <div class="form-group slide-up-fade-in" id="email-group" style="display: none; transition: all 0.3s ease;">
+                        <label class="form-label" for="auth-email">ACCOUNT RECOVERY MAIL</label>
+                        <div class="input-with-icon" style="position: relative;">
+                            <span class="input-icon-wrapper">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                            </span>
+                            <input class="form-input" type="email" id="auth-email" placeholder="e.g. operative@ops.net" autocomplete="off" style="padding-right: 45px;">
+                            <span class="validation-status-badge" id="email-validation-badge"></span>
+                        </div>
+                    </div>
+
+                    <!-- Hidden OTP input container -->
+                    <div class="form-group slide-up-fade-in" id="otp-group" style="display: none; transition: all 0.3s ease;">
+                        <label class="form-label" for="auth-otp">SECURE SECRETS OTP KEY</label>
+                        <div class="input-with-icon" style="position: relative;">
+                            <span class="input-icon-wrapper">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                            </span>
+                            <input class="form-input" type="text" id="auth-otp" placeholder="6-digit authentication key" maxlength="6" autocomplete="off" style="letter-spacing: 4px; text-align: center; padding-left: 15px; padding-right: 45px;">
+                            <span class="validation-status-badge" id="otp-validation-badge"></span>
+                        </div>
+                        <!-- Inline OTP broadcast status updates log -->
+                        <div id="otp-terminal-log" class="otp-terminal-log" style="display: none; margin-top: 10px; font-family: var(--font-mono); font-size: 0.8rem; color: var(--color-orange); background: rgba(255, 106, 0, 0.05); border: 1px dashed rgba(255, 106, 0, 0.2); padding: 8px 12px; border-radius: 4px; line-height: 1.4;"></div>
+                    </div>
+
+                    <!-- Simulated Biometrics Verification card panel -->
+                    <div class="biometrics-card" id="biometrics-card-container">
+                        <div class="biometrics-card-header">
+                            <span id="biometrics-header-title">SIMULATED BIOMETRICS VERIFICATION</span>
+                            <span id="biometrics-status" class="status-pending">PENDING_SCAN</span>
+                        </div>
+                        
+                        <div class="fingerprint-scanner-zone" id="fingerprint-zone">
+                            <!-- Premium concentric rotating HUD rings and target lines -->
+                            <div class="scanner-ring-outer"></div>
+                            <div class="scanner-ring-inner"></div>
+                            <div class="scanner-target-cross"></div>
+                            <div class="fingerprint-scan-grid"></div>
+                            
+                            <!-- Custom SVG Fingerprint ridges (High-Fidelity Concentric Full Oval Whorl) -->
+                            <svg class="fingerprint-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M18 55C18 32 28 12 50 12C72 12 82 32 82 55C82 72 74 88 50 88C32 88 22 78 19 64" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+                                <path d="M24 55C24 36 32 18 50 18C68 18 76 36 76 55C76 70 69 82 50 82C35 82 26 73 24 60" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+                                <path d="M30 60C30 67 36 76 50 76C64 76 70 67 70 55C70 40 63 24 50 24C37 24 30 40 30 50" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+                                <path d="M36 50C36 44 42 30 50 30C58 30 64 44 64 55C64 64 59 70 50 70C41 70 36 64 36 58" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+                                <path d="M42 55C42 48 45 36 50 36C55 36 58 48 58 55C58 60 55 64 50 64C45 64 42 60 42 57" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+                                <path d="M47 55C47 51 48 43 50 43C52 43 53 51 53 55C53 57 52 58 50 58C48 58 47 57 47 56" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+                                <path d="M50 49V53" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+                            </svg>
+                            <!-- Animated sweeping laser bar -->
+                            <div class="fingerprint-scan-laser"></div>
+                        </div>
+                        
+                        <p class="fingerprint-tip" id="fingerprint-tip-text">Tap scanner to record biometric footprint.</p>
+                    </div>
+
+                    <!-- Submit action button (handshake) -->
+                    <button class="btn-neon btn-handshake" type="submit" id="auth-submit-btn" disabled>
+                        <span class="btn-icon-wrapper" style="margin-right: 10px; display: inline-flex; align-items: center; vertical-align: middle;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        </span>
+                        INITIATE CLEARANCE HANDSHAKE
+                    </button>
+                </form>
+
+                <div class="auth-registry-footer" id="auth-footer-note">
+                    New to the CyberOps framework? <span class="registry-highlight" id="btn-toggle-registry">Biotic Operative Registry Mode</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================================================
+         4. CORE APPLICATIONS WINDOWS (SPA Layout)
+         ========================================================================== -->
+    <div id="app-layout" style="display: none;">
+        <!-- Mobile Sidebar Backdrop Overlay -->
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+        <!-- Left Side Dashboard Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                CYBER<span>OPS</span> OS
+            </div>
+            <nav style="flex-grow: 1;">
+                <ul class="sidebar-menu">
+                    <li class="sidebar-item active" data-tab="dashboard">
+                        <i data-lucide="terminal"></i> Command Hub
+                    </li>
+                    <li class="sidebar-item" data-tab="missions">
+                        <i data-lucide="shield-alert"></i> Operations Feed
+                    </li>
+                    <li class="sidebar-item" data-tab="terminal">
+                        <i data-lucide="monitor"></i> Workstation
+                    </li>
+                    <li class="sidebar-item" data-tab="network">
+                        <i data-lucide="network"></i> Infrastructure Map
+                    </li>
+                    <li class="sidebar-item" data-tab="burp">
+                        <i data-lucide="layers"></i> BURP PROXY
+                    </li>
+                    <li class="sidebar-item" data-tab="achievements">
+                        <i data-lucide="award"></i> Achievements
+                    </li>
+                    <li class="sidebar-item" data-tab="inventory-tools">
+                        <i data-lucide="folder"></i> Inventory Tools
+                    </li>
+                    <li class="sidebar-item" data-tab="leaderboard">
+                        <i data-lucide="users"></i> Scoreboard
+                    </li>
+                    <li class="sidebar-item" data-tab="settings">
+                        <i data-lucide="settings"></i> Configurations
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- Compact Operator stats card -->
+            <div class="user-profile-panel">
+                <div class="user-name">
+                    <span id="stat-username">NEO_PHREAK</span>
+                    <span class="rank-badge" id="stat-rank">Noob</span>
+                </div>
+                <div class="user-progress-bar">
+                    <div class="user-progress-fill" id="stat-xp-fill" style="width: 0%;"></div>
+                </div>
+                <div class="user-stats-compact">
+                    <div>LVL: <span class="stat-value" id="stat-level">1</span></div>
+                    <div>CRD: <span class="stat-value" id="stat-credits">100</span></div>
+                    <div>REP: <span class="stat-value" id="stat-rep">0</span></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right Side Primary Action Area -->
+        <main class="main-content">
+            <!-- Global Operation Room Header Info -->
+            <header class="content-header">
+                <button class="sidebar-toggle-btn" id="sidebar-toggle" aria-label="Toggle Navigation Menu">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="page-title" id="view-title">Command Hub</div>
+                <div class="header-actions">
+                    <div class="hud-panel">
+                        <div class="hud-item">SYS: <span style="color: var(--color-green);">ONLINE</span></div>
+                        <div class="hud-item">RELAY: <span style="color: var(--color-blue);" id="hud-ping">24ms</span></div>
+                        <div class="hud-item">ENCRYPT: <span style="color: var(--color-orange);" id="hud-encrypt">AES-GCM</span></div>
+                    </div>
+                    <!-- Volume quick toggle button -->
+                    <button class="btn-neon" id="header-sound-btn" style="padding: 6px 12px; font-size: 0.85rem; min-height: auto;">
+                        <i data-lucide="volume-2" style="width: 16px; height: 16px;"></i>
+                    </button>
+                    <!-- Disconnect / Logout button -->
+                    <button class="btn-neon" id="header-logout-btn" style="padding: 6px 12px; font-size: 0.85rem; min-height: auto; border-color: rgba(255, 70, 70, 0.4); color: rgba(255, 70, 70, 0.85); --neon-glow: rgba(255, 70, 70, 0.2);">
+                        <i data-lucide="log-out" style="width: 16px; height: 16px; margin-right: 5px; vertical-align: middle;"></i>
+                        <span style="vertical-align: middle;">DISCONNECT</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dynamic Views (Viewports toggled by app.js router) -->
+            
+            <!-- A. HUB VIEW (Dashboard overview) -->
+            <div class="view-port active" id="view-dashboard">
+                <div class="dashboard-grid">
+                    <div class="dashboard-left">
+                        <!-- Simulated Network Traffic Chart Widget -->
+                        <div class="cyber-card">
+                            <div class="card-title">
+                                <span>Realtime Network Activity Monitor</span>
+                                <span id="hud-bandwidth" style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--color-green);">ACTIVE BANDWIDTH: 4.8 GBPS</span>
+                            </div>
+                            <div class="traffic-graph-container" id="traffic-bars-container">
+                                <!-- Dynamic bars instantiated by network.js -->
+                            </div>
+                        </div>
+
+                        <!-- Quick Start Mission Box (Auto-Deployer) -->
+                        <div class="cyber-card cyber-card-blue" id="quick-start-mission-box" style="position: relative;">
+                            <div class="card-title">
+                                <span>Quick Start Workstation</span>
+                                <span style="color: var(--color-blue); font-size: 0.8rem; border: 1px solid var(--color-blue); padding: 2px 8px; font-weight: bold; font-family: var(--font-mono); letter-spacing: 1px;" id="quick-start-status">AUTO-DEPLOY</span>
+                            </div>
+                            <div class="quick-start-content" style="display: flex; align-items: center; justify-content: space-between; gap: 20px;">
+                                <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: flex-start; justify-content: center;">
+                                    <h4 style="font-size: 1.25rem; color: #FFF; margin-bottom: 8px;" id="quick-start-title">Deploy Next Mission</h4>
+                                    <p style="color: var(--color-text-muted); line-height: 1.5; font-size: 0.95rem; margin-bottom: 15px;" id="quick-start-desc">
+                                        Click start to auto-deploy your next incomplete simulated target and boot your terminal console.
+                                    </p>
+                                    <button class="btn-neon btn-neon-blue" id="quick-start-btn" style="font-size: 0.85rem; padding: 6px 20px; font-weight: bold; min-height: auto;">START</button>
+                                </div>
+                                <div class="quick-start-stats-container" style="display: flex; gap: 35px; border-left: 1px solid var(--color-border); padding-left: 30px; align-items: center; justify-content: center; min-width: 220px; height: 100%;">
+                                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                        <div style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-family: var(--font-mono); letter-spacing: 1px; white-space: nowrap; margin-bottom: 6px;">Levels Done</div>
+                                        <div style="font-size: 1.8rem; font-weight: bold; color: var(--color-blue); text-shadow: 0 0 10px var(--color-blue-glow); font-family: var(--font-mono); line-height: 1;" id="quick-start-completed-count">0</div>
+                                    </div>
+                                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                        <div style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-family: var(--font-mono); letter-spacing: 1px; white-space: nowrap; margin-bottom: 6px;">Tools Used</div>
+                                        <div style="font-size: 1.8rem; font-weight: bold; color: var(--color-blue); text-shadow: 0 0 10px var(--color-blue-glow); font-family: var(--font-mono); line-height: 1;" id="quick-start-tools-count">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Live Interactive Mission Card Widget -->
+                        <div class="cyber-card cyber-card-orange" id="dashboard-active-mission-card">
+                            <div class="card-title">
+                                <span>Assigned Mission Objective</span>
+                                <span style="color: var(--color-orange);" id="active-mission-difficulty-hud">EASY</span>
+                            </div>
+                            <div id="dashboard-active-mission-desc">
+                                <h4 style="font-size: 1.3rem; color: #FFF; margin-bottom: 8px;" id="dashboard-active-mission-name">No Mission Loaded</h4>
+                                <p style="color: var(--color-text-muted); line-height: 1.5; font-size: 0.95rem; margin-bottom: 20px;" id="dashboard-active-mission-body">
+                                    Browse the Operations Feed, filter by difficulty matching your operational skill, and deploy an isolated sandbox server environment to start hacking.
+                                </p>
+                                <button class="btn-neon btn-neon-orange" id="dashboard-active-mission-go-btn" style="font-size: 0.9rem; padding: 8px 20px;">DEPLOY WORKSTATION</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-right">
+                        <!-- Global Threat Log Stream Widget -->
+                        <div class="cyber-card cyber-card-red" style="flex-grow: 1;">
+                            <div class="card-title">
+                                <span>Live Operations Feed</span>
+                                <i data-lucide="shield-alert" style="color: var(--color-red); width: 18px;"></i>
+                            </div>
+                            <div class="threat-feed" id="threat-feed-container">
+                                <!-- Procedural scrolling security alerts -->
+                            </div>
+                        </div>
+
+                        <!-- Level Progress detailed panel -->
+                        <div class="cyber-card cyber-card-blue">
+                            <div class="card-title">Daily Operations Goal</div>
+                            <p style="font-size: 0.9rem; color: var(--color-text-muted); line-height: 1.5; margin-bottom: 12px;">
+                                Successfully crack target nodes, extract credential data flags, and upload core files to accumulate Rep points and level credentials.
+                            </p>
+                            <div style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--color-blue); display: flex; justify-content: space-between;">
+                                <span>CRACK 3 WEB NODES</span>
+                                <span>XP +150 / CRD +50</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- B. OPERATIONS FEED VIEW (Mission grid lists) -->
+            <div class="view-port" id="view-missions">
+                <div class="mission-filters">
+                    <button class="filter-btn active" data-filter="all">All Targets</button>
+                    <button class="filter-btn" data-filter="easy">Easy (Linux Basics)</button>
+                    <button class="filter-btn" data-filter="medium">Medium (Infrastructure)</button>
+                    <button class="filter-btn" data-filter="hard">Hard (Enterprise Networks)</button>
+                </div>
+                <div class="mission-grid" id="missions-cards-container">
+                    <!-- Procedural dynamic missions cards listed here -->
+                </div>
+            </div>
+
+            <!-- C. WORKSTATION VIEW (Sandboxed Terminal Window) -->
+            <div class="view-port" id="view-terminal">
+                <div class="terminal-view-container" id="terminal-view">
+                    <!-- Left Shell Window -->
+                    <div class="terminal-workstation">
+                        <div class="terminal-window-header">
+                            <div class="dots">
+                                <span class="dot dot-close"></span>
+                                <span class="dot dot-min"></span>
+                                <span class="dot dot-max"></span>
+                            </div>
+                            <span class="terminal-target-title" id="terminal-session-status">OFFLINE (NO TARGET ACQUIRED)</span>
+                            <div class="keyboard-status-indicator">SHELL: <span id="terminal-shell-type">/bin/bash</span></div>
+                        </div>
+
+                        <!-- Active Terminal shell screen -->
+                        <div class="terminal-screen" id="terminal-screen-element">
+                            <div class="terminal-output" id="terminal-output-container">
+                                Welcome to CyberOps Terminal Session.
+                                Acquire a target mission from the "Operations Feed" tab.
+                                Type "help" to list available simulator tools when connected.
+                            </div>
+                            <div class="terminal-input-line">
+                                <span class="terminal-prompt" id="terminal-prompt-string">guest@cyberops:~$</span>
+                                <div class="terminal-input-wrapper">
+                                    <span class="terminal-input-ghost-before" id="terminal-input-ghost-before"></span><span class="terminal-custom-caret" id="terminal-custom-caret"></span><span class="terminal-input-ghost-after" id="terminal-input-ghost-after"></span>
+                                    <input class="terminal-command-input" type="text" id="terminal-shell-input" autocomplete="off" spellcheck="false">
+                                </div>
+                            </div>
+
+                            <!-- Integrated Nano editor simulated frame -->
+                            <div class="nano-editor" id="nano-editor-panel">
+                                <div class="nano-header">
+                                    <span>UW PICO 5.09 — simulated text editor</span>
+                                    <span id="nano-file-editing-label">Editing: file.txt</span>
+                                </div>
+                                <textarea class="nano-textarea" id="nano-editor-textarea" spellcheck="false"></textarea>
+                                <div class="nano-footer">
+                                    <div><span class="nano-key">^O</span> WriteOut</div>
+                                    <div><span class="nano-key">^X</span> Close Editor</div>
+                                    <div><span class="nano-key">^G</span> Get Help</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Inspector Panel for Active Missions checklist -->
+                    <aside class="inspector-panel">
+                        <div class="inspector-header">Operations Inspector</div>
+                        <div class="inspector-body">
+                            <!-- Objective tracking list -->
+                            <div>
+                                <h4 style="font-size: 0.95rem; color: #FFF; text-transform: uppercase; margin-bottom: 12px; border-left: 2px solid var(--color-green); padding-left: 8px;">
+                                    Target Objectives
+                                </h4>
+                                <div id="terminal-objectives-container">
+                                    <div style="color: var(--color-text-muted); font-size: 0.9rem;">No active operation loaded. Deploy a target from the feed.</div>
+                                </div>
+                            </div>
+
+                            <!-- Target diagnostics panel -->
+                            <div>
+                                <h4 style="font-size: 0.95rem; color: #FFF; text-transform: uppercase; margin-bottom: 12px; border-left: 2px solid var(--color-blue); padding-left: 8px;">
+                                    Connection Diagnostic
+                                </h4>
+                                <div class="target-metadata">
+                                    <div class="meta-row">
+                                        <span class="meta-label">Domain:</span>
+                                        <span class="meta-value" id="term-meta-domain">N/A</span>
+                                    </div>
+                                    <div class="meta-row">
+                                        <span class="meta-label">IPv4 IP:</span>
+                                        <span class="meta-value" id="term-meta-ip">0.0.0.0</span>
+                                    </div>
+                                    <div class="meta-row">
+                                        <span class="meta-label">Port Active:</span>
+                                        <span class="meta-value" id="term-meta-ports">None</span>
+                                    </div>
+                                    <div class="meta-row">
+                                        <span class="meta-label">Host OS:</span>
+                                        <span class="meta-value" id="term-meta-os">Simulated VFS</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Safe tool guides helper -->
+                            <div style="margin-top: auto; border: 1px dashed var(--color-border); padding: 12px; font-size: 0.8rem; line-height: 1.5; color: var(--color-text-muted);">
+                                <span style="color: var(--color-orange); font-weight: bold;">TIPS:</span> Try typing <code style="color:#FFF;">nmap</code> or <code style="color:#FFF;">ls -la</code> to map environments. Read `.txt` files containing credential flags.
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+
+            <!-- D. INFRASTRUCTURE VIEW (Topology Map) -->
+            <div class="view-port" id="view-network" style="position: relative !important; height: calc(100vh - 70px) !important; width: 100% !important; background-color: #070707 !important; overflow: hidden !important; padding: 0 !important;">
+                <!-- Renders node vectors on absolute coordinate plane -->
+                <canvas id="network-canvas"></canvas>
+                <div class="network-controls">
+                    <button class="btn-neon" id="net-btn-zoom-in" style="padding: 6px 12px; font-size: 0.85rem;"><i data-lucide="zoom-in" style="width: 14px; height: 14px;"></i></button>
+                    <button class="btn-neon" id="net-btn-zoom-out" style="padding: 6px 12px; font-size: 0.85rem;"><i data-lucide="zoom-out" style="width: 14px; height: 14px;"></i></button>
+                    <button class="btn-neon" id="net-btn-reset" style="padding: 6px 12px; font-size: 0.85rem;">RESET MAP</button>
+                </div>
+                <div class="net-hud">
+                    <h4 style="color:#FFF; border-bottom: 1px solid var(--color-border); padding-bottom: 5px; margin-bottom: 8px;">NODE DIAGNOSTICS</h4>
+                    <div id="net-hud-body">
+                        Hover or select node infrastructure component in target layout grid.
+                    </div>
+                </div>
+            </div>
+
+            <!-- H. BURP PROXY VIEW (Packet Interceptor & Chat) -->
+            <div class="view-port" id="view-burp">
+                <div class="burp-grid">
+                    <!-- Left: Interceptor Pane -->
+                    <div class="burp-left-pane">
+                        <div class="cyber-card burp-interceptor-card">
+                            <div class="card-title burp-header-title">
+                                <span class="burp-panel-title-text"><i data-lucide="layers" style="vertical-align: middle; margin-right: 8px; width: 18px; height: 18px;"></i>BURPSUITE / WIRESHARK INTERCEPTOR NODE</span>
+                                <button class="btn-neon burp-status-btn" id="burp-status-pill" style="cursor: pointer;">
+                                    <span class="status-dot"></span> PROXY INTERCEPT: IDLE
+                                </button>
+                            </div>
+                            
+                            <!-- Packet Intercept Table -->
+                            <div class="burp-table-wrapper">
+                                <table class="burp-packet-table">
+                                    <thead>
+                                        <tr>
+                                            <th>PROTOCOL</th>
+                                            <th>SOURCE</th>
+                                            <th>DESTINATION</th>
+                                            <th>LENGTH</th>
+                                            <th>INFO DESCRIPTION</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="burp-packet-list">
+                                        <!-- Packets injected dynamically by app.js -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Hex Decompilation Viewport -->
+                            <div class="burp-decompilation-box">
+                                <div class="decompilation-header" style="align-items: center;">
+                                    <span id="burp-decomp-title">HEX STREAMING DECOMPILATION: PACKET #P_2</span>
+                                    <div class="decomp-actions" style="display: flex; gap: 8px;">
+                                        <button class="btn-neon" id="burp-btn-forward" style="padding: 2px 8px; font-size: 0.7rem; min-height: auto; cursor: pointer;">FORWARD</button>
+                                        <button class="btn-neon btn-neon-orange" id="burp-btn-replay" style="padding: 2px 8px; font-size: 0.7rem; min-height: auto; cursor: pointer;">REPLAY</button>
+                                    </div>
+                                    <span class="decomp-protocol-source" id="burp-decomp-source">PROTOCOL SOURCE: HTTP</span>
+                                </div>
+                                <div class="decompilation-content">
+                                    <pre id="burp-decomp-text">Host: blog-alpha.local
+User-Agent: Mozilla/5.0-Nmap</pre>
+                                </div>
+                            </div>
+
+                            <!-- Footer Alert Panel -->
+                            <div class="burp-footer-banner">
+                                <i data-lucide="shield-alert" class="banner-icon"></i>
+                                <span class="banner-text">Wireshark TAP capturing emulation is secure. Injected payloads only resolve within local training parameters targets subnets.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Chat Pane -->
+                    <div class="burp-right-pane">
+                        <div class="cyber-card burp-chat-card">
+                            <div class="card-title chat-header-title">
+                                <div class="chat-title-group">
+                                    <div class="chat-primary-title">MULTIPLAYER CHANNEL STREAMS</div>
+                                    <div class="chat-secondary-title">Global Operative Core-Chat</div>
+                                </div>
+                                <span class="chat-status-badge"><span class="chat-status-dot"></span>ONLINE</span>
+                            </div>
+
+                            <!-- Scrollable Chat Area -->
+                            <div class="burp-chat-history" id="burp-chat-history">
+                                <!-- Pre-loaded chat dialogue logs -->
+                            </div>
+
+                            <!-- Interactive Chat Message Box -->
+                            <div class="burp-chat-input-form">
+                                <input type="text" class="form-input burp-chat-input" id="burp-chat-input" placeholder="Payload operational messages..." autocomplete="off">
+                                <button class="btn-neon burp-chat-send-btn" id="burp-chat-send">
+                                    <i data-lucide="send" style="width: 16px; height: 16px;"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- E. ACHIEVEMENTS VIEW (Rewards inventory) -->
+            <div class="view-port" id="view-achievements">
+                <!-- Top Stats Cards Row -->
+                <div class="achievements-stats-row">
+                    <!-- Card 1: Active Deck Class -->
+                    <div class="cyber-card ach-stat-card ach-card-green">
+                        <div class="ach-stat-icon-wrapper">
+                            <i data-lucide="trophy" style="width: 20px; height: 20px;"></i>
+                        </div>
+                        <div class="ach-stat-info">
+                            <div class="ach-stat-label">ACTIVE DECK CLASS</div>
+                            <div class="ach-stat-value" id="ach-stat-deck">APPRENTICE CADET</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Card 2: Operations Completed -->
+                    <div class="cyber-card ach-stat-card ach-card-blue">
+                        <div class="ach-stat-icon-wrapper">
+                            <i data-lucide="check-square" style="width: 20px; height: 20px;"></i>
+                        </div>
+                        <div class="ach-stat-info">
+                            <div class="ach-stat-label">OPERATIONS COMPLETED</div>
+                            <div class="ach-stat-value" id="ach-stat-contracts">0 of 4 CONTRACTS</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Card 3: Trophies Recovered -->
+                    <div class="cyber-card ach-stat-card ach-card-orange">
+                        <div class="ach-stat-icon-wrapper">
+                            <i data-lucide="award" style="width: 20px; height: 20px;"></i>
+                        </div>
+                        <div class="ach-stat-info">
+                            <div class="ach-stat-label">TROPHIES RECOVERED</div>
+                            <div class="ach-stat-value" id="ach-stat-badges">0 of 5 BADGES</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section Divider / Header -->
+                <div class="achievements-section-header">
+                    <i data-lucide="shield-check" style="width: 18px; height: 18px; margin-right: 8px; vertical-align: middle;"></i>
+                    <span style="vertical-align: middle;">SECURITY TROPHIES ARCHIVE</span>
+                </div>
+
+                <!-- Achievements Grid -->
+                <div class="achievements-grid" id="achievements-cards-container">
+                    <!-- Dynamic badges unlocked -->
+                </div>
+            </div>
+
+            <!-- I. INVENTORY TOOLS VIEW -->
+            <div class="view-port" id="view-inventory-tools">
+                <!-- Grid Page (List View) -->
+                <div id="tools-inventory-list">
+                    <div class="inventory-section-header">
+                        <div class="title-group">
+                            <i data-lucide="folder" style="width: 20px; height: 20px;"></i>
+                            <span>Operational Toolkits Inventory</span>
+                        </div>
+                        <p class="inventory-subtitle">
+                            Review unlocked tactical programs, wordlists, and credentials key chains. Complete missions to compile more advanced binaries.
+                        </p>
+                    </div>
+                    <div class="tools-grid" id="tools-grid-container">
+                        <!-- Dynamically populated cards go here -->
+                    </div>
+                </div>
+                
+                <!-- Detail Page (Documentation View) - Hidden by default -->
+                <div id="tools-inventory-detail" style="display: none;">
+                    <button class="btn-neon" id="btn-back-to-inventory" style="margin-bottom: 20px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px;">
+                        <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i> BACK TO TOOLKITS
+                    </button>
+                    
+                    <div class="cyber-card tool-detail-card" id="tool-detail-content">
+                        <!-- Dynamically populated documentation goes here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- F. LEADERBOARD VIEW (Scoreboards ranking) -->
+            <div class="view-port" id="view-leaderboard">
+                <div class="cyber-card" style="max-width: 600px; margin: 0 auto;">
+                    <div class="card-title">TOP DEPLOYED OPERATIVES</div>
+                    <div class="leaderboard-list" id="leaderboard-scores-container">
+                        <!-- Top scores dynamically created -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- G. CONFIGURATIONS VIEW (Visual custom settings panels) -->
+            <div class="view-port" id="view-settings">
+                <div style="max-width: 800px; margin: 0 auto;">
+
+                    <!-- Console Appearance Card (Custom selectors matching mockup screenshot) -->
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">
+                            <i data-lucide="terminal" style="width: 18px; height: 18px; margin-right: 8px; vertical-align: middle;"></i>
+                            <span style="vertical-align: middle;">CONSOLE APPEARANCE</span>
+                        </h3>
+                        
+                        <div class="appearance-setting-group">
+                            <div class="appearance-label">Terminal Prompt Cursor State</div>
+                            <div class="appearance-btn-group" id="cursor-state-buttons">
+                                <button class="btn-appearance-select" data-value="block">BLOCK</button>
+                                <button class="btn-appearance-select" data-value="underline">UNDERLINE</button>
+                                <button class="btn-appearance-select" data-value="bar">BAR</button>
+                            </div>
+                        </div>
+                        
+                        <div class="appearance-setting-group" style="margin-top: 25px;">
+                            <div class="appearance-label">Shell Font-Family</div>
+                            <div class="appearance-btn-group font-family-grid" id="shell-font-buttons">
+                                <button class="btn-appearance-select" data-value="vt323">VT323 (Retro Pixel)</button>
+                                <button class="btn-appearance-select" data-value="press-start">Press Start 2P (8-Bit)</button>
+                                <button class="btn-appearance-select" data-value="space-mono">Space Mono (Cyber)</button>
+                                <button class="btn-appearance-select" data-value="share-tech-mono">Share Tech Mono (HUD)</button>
+                                <button class="btn-appearance-select" data-value="fira-code">Fira Code (Modern)</button>
+                                <button class="btn-appearance-select" data-value="jetbrains-mono">JetBrains Mono (Clean)</button>
+                                <button class="btn-appearance-select" data-value="inconsolata">Inconsolata (Terminal)</button>
+                                <button class="btn-appearance-select" data-value="source-code">Source Code Pro (Adobe)</button>
+                                <button class="btn-appearance-select" data-value="courier-new">Courier New (Mainframe)</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vibrant Color Themes Card -->
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">
+                            <i data-lucide="palette" style="width: 18px; height: 18px; margin-right: 8px; vertical-align: middle;"></i>
+                            <span style="vertical-align: middle;">Vibrant Cyberpunk Color Themes</span>
+                        </h3>
+                        <div class="theme-picker-grid" id="theme-picker-container">
+                            <div class="theme-card" data-theme="classic-green">
+                                <div class="theme-color-preview" style="background-color: #00FF66;"></div>
+                                <div class="theme-info">
+                                    <div class="theme-name">Classic Green</div>
+                                    <div class="theme-desc">Retro terminal matrix style</div>
+                                </div>
+                            </div>
+                            <div class="theme-card" data-theme="cyberpunk-amber">
+                                <div class="theme-color-preview" style="background-color: #FFB000;"></div>
+                                <div class="theme-info">
+                                    <div class="theme-name">Cyberpunk Amber</div>
+                                    <div class="theme-desc">Decentralized warning netrunner hue</div>
+                                </div>
+                            </div>
+                            <div class="theme-card" data-theme="deep-cyan">
+                                <div class="theme-color-preview" style="background-color: #00E5FF;"></div>
+                                <div class="theme-info">
+                                    <div class="theme-name">Deep Cyan</div>
+                                    <div class="theme-desc">Tactical mainframe azure console</div>
+                                </div>
+                            </div>
+                            <div class="theme-card" data-theme="obsidian-red">
+                                <div class="theme-color-preview" style="background-color: #FF3B30;"></div>
+                                <div class="theme-info">
+                                    <div class="theme-name">Obsidian Red</div>
+                                    <div class="theme-desc">Alert state access breach override</div>
+                                </div>
+                            </div>
+                            <div class="theme-card" data-theme="sunset-purple">
+                                <div class="theme-color-preview" style="background-color: #D500F9;"></div>
+                                <div class="theme-info">
+                                    <div class="theme-name">Sunset Purple</div>
+                                    <div class="theme-desc">Neon violet cyberspace grid hub</div>
+                                </div>
+                            </div>
+                            <div class="theme-card" data-theme="glitch-ice-blue">
+                                <div class="theme-color-preview" style="background-color: #8BE9FD;"></div>
+                                <div class="theme-info">
+                                    <div class="theme-name">Glitch Ice Blue</div>
+                                    <div class="theme-desc">High-tech subzero mainframe protocol</div>
+                                </div>
+                            </div>
+                            <div class="theme-card" data-theme="radioactive-yellow">
+                                <div class="theme-color-preview" style="background-color: #E2F105;"></div>
+                                <div class="theme-info">
+                                    <div class="theme-name">Radioactive Yellow</div>
+                                    <div class="theme-desc">Corrosive acid code bypass compiler</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sound custom synthesis adjustments section -->
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">
+                            <i data-lucide="volume-2" style="width: 18px; height: 18px; margin-right: 8px; vertical-align: middle;"></i>
+                            <span style="vertical-align: middle;">Granular Sound Synthesis Engine (Web Audio API)</span>
+                        </h3>
+                        
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <h4 class="setting-name">Master Audio System</h4>
+                                <p class="setting-desc">Globally mute or unmute all synthesized sound channels and acoustic pulses.</p>
+                            </div>
+                            <label class="cyber-switch">
+                                <input type="checkbox" id="settings-audio-effects" checked>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <h4 class="setting-name">Master Volume Level</h4>
+                                <p class="setting-desc">Adjust the overall gain amplification level of the procedural oscillators.</p>
+                            </div>
+                            <input class="cyber-slider" type="range" id="settings-audio-volume" min="0" max="1" step="0.05" value="0.5">
+                        </div>
+
+                        <!-- Granular Audio Switches -->
+                        <div style="border-top: 1px solid var(--color-border); margin: 20px 0; padding-top: 15px;">
+                            <h4 class="setting-name" style="margin-bottom: 15px; color: var(--color-green);">Granular Audio Channels</h4>
+                            
+                            <div class="setting-row" style="padding: 5px 0;">
+                                <div class="setting-info">
+                                    <h5 class="setting-name" style="font-size: 0.95rem;">Enable Mechanical Typing Sounds</h5>
+                                    <p class="setting-desc">Generate low-latency synthesized switch clicks when typing commands in terminal screens.</p>
+                                </div>
+                                <label class="cyber-switch">
+                                    <input type="checkbox" id="settings-audio-keyboard" checked>
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="setting-row" style="padding: 5px 0;">
+                                <div class="setting-info">
+                                    <h5 class="setting-name" style="font-size: 0.95rem;">Enable UI Clicks & Ticks</h5>
+                                    <p class="setting-desc">Play satisfying micro-ticks and woody transients when hovering and clicking controls.</p>
+                                </div>
+                                <label class="cyber-switch">
+                                    <input type="checkbox" id="settings-audio-clicks" checked>
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="setting-row" style="padding: 5px 0;">
+                                <div class="setting-info">
+                                    <h5 class="setting-name" style="font-size: 0.95rem;">Enable System Warnings & Chimes</h5>
+                                    <p class="setting-desc">Play Major Pentatonic arpeggios on mission success and dissonant warning sweeps on security errors.</p>
+                                </div>
+                                <label class="cyber-switch">
+                                    <input type="checkbox" id="settings-audio-alerts" checked>
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="setting-row" style="padding: 5px 0;">
+                                <div class="setting-info">
+                                    <h5 class="setting-name" style="font-size: 0.95rem;">Enable Ambient Server Hum</h5>
+                                    <p class="setting-desc">Generate a continuous deep, rich cooling fan oscillation representing active server processors.</p>
+                                </div>
+                                <label class="cyber-switch">
+                                    <input type="checkbox" id="settings-audio-hum" checked>
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Typing and Click Profiles selectors (Satisfying buttons!) -->
+                        <div style="border-top: 1px solid var(--color-border); margin: 20px 0; padding-top: 15px;">
+                            <div class="appearance-setting-group">
+                                <div class="appearance-label">Keyboard Typing Sound Profile</div>
+                                <div class="appearance-btn-group font-family-grid" id="keyboard-profile-buttons">
+                                    <button class="btn-appearance-select" data-value="cherry-blue">Cherry MX Blue</button>
+                                    <button class="btn-appearance-select" data-value="cherry-brown">Cherry MX Brown</button>
+                                    <button class="btn-appearance-select" data-value="alps-blue">Alps Blue (Vintage)</button>
+                                    <button class="btn-appearance-select" data-value="retro-beep">Retro Beep Typist</button>
+                                    <button class="btn-appearance-select" data-value="bubble-wrap">Bubble Wrap Popper</button>
+                                    <button class="btn-appearance-select" data-value="laser-blaster">Laser Blaster Typist</button>
+                                </div>
+                            </div>
+
+                            <div class="appearance-setting-group" style="margin-top: 20px;">
+                                <div class="appearance-label">UI Click Sound Profile</div>
+                                <div class="appearance-btn-group" id="click-profile-buttons">
+                                    <button class="btn-appearance-select" data-value="tactile">Tactile Click</button>
+                                    <button class="btn-appearance-select" data-value="retro-digital">Retro Digital Tick</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rendering matrix rain custom configurations density settings -->
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">Cyber Visual Interface Adjustments</h3>
+                        
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <h4 class="setting-name">Simulate Matrix Rain</h4>
+                                <p class="setting-desc">Execute CPU matrix-style code particle drops animation behind active panels.</p>
+                            </div>
+                            <label class="cyber-switch">
+                                <input type="checkbox" id="settings-visual-matrix" checked>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <h4 class="setting-name">Terminal Blink speed</h4>
+                                <p class="setting-desc">Increase responsiveness rate of caret indicators.</p>
+                            </div>
+                            <label class="cyber-switch">
+                                <input type="checkbox" id="settings-visual-crt" checked>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Developer tools section -->
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">Security & Sandbox Database Management</h3>
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <h4 class="setting-name">Flush Local Progress Stats</h4>
+                                <p class="setting-desc">Wipes Level achievements, unlocked credit assets, and restores profile index tracker stats to default levels.</p>
+                            </div>
+                            <button class="btn-neon btn-neon-red" id="settings-btn-reset-data" style="font-size: 0.85rem; padding: 6px 15px;">WIPE SYSTEM DATA</button>
+                        </div>
+                    </div>
+
+                    <!-- DANGER BREACH OVERRIDE (Danger Zone) -->
+                    <div class="settings-section settings-section-danger" style="border-color: var(--color-red); box-shadow: inset 0 0 10px rgba(255, 60, 56, 0.05); margin-top: 30px;">
+                        <h3 class="settings-section-title" style="color: var(--color-red); font-weight: bold; text-shadow: 0 0 10px var(--color-red-glow);">
+                            <i data-lucide="shield-alert" style="width: 18px; height: 18px; margin-right: 8px; vertical-align: middle; color: var(--color-red);"></i>
+                            <span style="vertical-align: middle;">DANGER BREACH OVERRIDE (DANGER ZONE)</span>
+                        </h3>
+                        
+                        <!-- Email update row -->
+                        <div class="setting-row" style="flex-direction: column; align-items: stretch; gap: 15px;">
+                            <div class="setting-info">
+                                <h4 class="setting-name">Update Primary Recovery Address</h4>
+                                <p class="setting-desc">Modifies the database decryption gateway recovery email. Requires direct active check validation.</p>
+                            </div>
+                            <div class="input-with-icon" style="max-width: 450px; position: relative;">
+                                <span class="input-icon-wrapper" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; pointer-events: none; color: #384A62;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                                </span>
+                                <input class="form-input" type="email" id="danger-email-input" placeholder="e.g. new_operative@ops.net" autocomplete="off" style="padding-left: 45px; padding-right: 90px; width: 100%;">
+                                <span class="validation-status-badge" id="danger-email-badge"></span>
+                                <button class="btn-neon" id="danger-btn-update-email" style="position: absolute; right: 0; top: 0; bottom: 0; padding: 0 15px; font-size: 0.8rem; border-left: 1px solid var(--color-green); border-radius: 0 4px 4px 0; min-height: auto;" disabled>UPDATE</button>
+                            </div>
+                        </div>
+
+                        <!-- Account Delete row -->
+                        <div class="setting-row" style="border-top: 1px solid rgba(255, 60, 56, 0.15); margin-top: 20px; padding-top: 20px;">
+                            <div class="setting-info">
+                                <h4 class="setting-name" style="color: var(--color-red);">Permanent Clearance Purge</h4>
+                                <p class="setting-desc">Shreds database profiles index records, invalidates local system token files, and shuts down current session relays permanently.</p>
+                            </div>
+                            <button class="btn-neon btn-neon-red" id="danger-btn-delete-account" style="font-size: 0.85rem; padding: 8px 20px; font-weight: bold; --neon-glow: rgba(255, 60, 56, 0.3);">SHRED ACCOUNT</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Main Module Application scripts -->
+    <script src="js/app.js"></script>
+</body>
+</html>
